@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1fc96ded12604ce487e387ae87826b0, type: 3}
+  m_Name: NanoSteelFactorySettings
+  m_EditorClassIdentifier: 
+  ResourceItem: {fileID: 4809129820886174115, guid: 32b84e228374240abba9a3fe1ad40d29, type: 3}
+  ProductionInterval: 10
+  ResourceRequirements:
+  - ResourceName: 0
+    AmountRequired: 1
+  - ResourceName: 1
+    AmountRequired: 1
