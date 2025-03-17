@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public class NotificationSystem : MonoBehaviour
+public class NotificationService : MonoBehaviour
 {
+    private const string SHOW_TRIGGER_NAME = "Show";
+    private const string HIDE_TRIGGER_NAME = "Hide";
+    
     [SerializeField] private TextMeshProUGUI _notificationText;
     [SerializeField] private Animator _notificationAnimator;
     [SerializeField] private float _notificationDuration = 3f;
-
-    private Queue<INotification> _notificationQueue = new Queue<INotification>();
+    
+    private readonly Queue<INotification> _notificationQueue = new();
     private bool _isNotificationPlaying = false;
 
     public void ShowNotification(INotification notification)
@@ -17,22 +20,21 @@ public class NotificationSystem : MonoBehaviour
         if (_isNotificationPlaying)
         {
             _notificationQueue.Enqueue(notification);
+            return;
         }
-        else
-        {
-            StartCoroutine(ShowNotificationCoroutine(notification));
-        }
+        
+        StartCoroutine(ShowNotificationCoroutine(notification));
     }
 
     private IEnumerator ShowNotificationCoroutine(INotification notification)
     {
         _isNotificationPlaying = true;
         _notificationText.text = notification.GetNotificationText();
-        _notificationAnimator.SetTrigger("Show");
+        _notificationAnimator.SetTrigger(SHOW_TRIGGER_NAME);
 
         yield return new WaitForSeconds(_notificationDuration);
 
-        _notificationAnimator.SetTrigger("Hide");
+        _notificationAnimator.SetTrigger(HIDE_TRIGGER_NAME);
 
         yield return new WaitForSeconds(0.5f);
 

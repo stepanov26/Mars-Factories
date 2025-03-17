@@ -1,6 +1,6 @@
 public class FullStorageNotification : INotification
 {
-    private ResourceType _resourceType;
+    private readonly ResourceType _resourceType;
 
     public FullStorageNotification(ResourceType resourceType)
     {

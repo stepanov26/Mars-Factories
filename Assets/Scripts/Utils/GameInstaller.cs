@@ -29,7 +29,7 @@ public class GameInstaller : MonoInstaller
 
     private void BindNotificationSystem()
     {
-        Container.Bind<NotificationSystem>()
+        Container.Bind<NotificationService>()
          .FromComponentInHierarchy()
          .AsSingle()
          .NonLazy();

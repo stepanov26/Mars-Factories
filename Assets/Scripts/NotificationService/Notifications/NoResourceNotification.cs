@@ -3,10 +3,10 @@ using System.Text;
 
 public class NoResourceNotification : INotification
 {
-    private ResourceType _resourceType;
-    private List<ResourceType> _missingResources;
+    private readonly ResourceType _resourceType;
+    private readonly IEnumerable<ResourceType> _missingResources;
 
-    public NoResourceNotification(ResourceType factoryResourceType, List<ResourceType> missingResources)
+    public NoResourceNotification(ResourceType factoryResourceType, IEnumerable<ResourceType> missingResources)
     {
         _resourceType = factoryResourceType;
         _missingResources = missingResources;

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UniRx;
 
 public class FactoryStorage : MonoBehaviour
 {
@@ -9,55 +10,36 @@ public class FactoryStorage : MonoBehaviour
     [SerializeField] private StorageType _storageType;
     [SerializeField] private List<Transform> _placeTransforms;
 
-    public ResourceType Resource => _resourceType;
+    public ResourceType ResourceType => _resourceType;
     public StorageType StorageType => _storageType;
 
-    public bool HasEmptyPlace => _capacity > _itemPlaces.Count(x => x.Resource != null);
-    public bool HasResource => _itemPlaces.Any(x => x.Resource != null);
+    public bool HasEmptyPlace => _capacity > _resourcesCount.Value;
+    public bool HasResource => _resourcesCount.Value > 0;
 
-    private List<ItemPlace> _itemPlaces;
+    public IReadOnlyReactiveProperty<int> ResourcesCount => _resourcesCount;
+
+    private readonly ReactiveProperty<int> _resourcesCount = new();
+    private IEnumerable<FactoryStorageItemPlace> _itemPlaces;
+
 
     private void Awake()
     {
-        _itemPlaces = _placeTransforms.Select(x => new ItemPlace(x)).ToList();
+        _itemPlaces = _placeTransforms.Select(x => new FactoryStorageItemPlace(x)).ToArray();
     }
-
-    public ResourceItem GetResource()
-    {
-        var place = _itemPlaces.FindLast(x => x.Resource != null);
-        var resource = place.Resource;
-        place.SetResource(null);
-        return resource;
-    }
-
+    
     public void AddResource(ResourceItem resource)
     {
-        var emptyPlace = _itemPlaces.Find(x => x.Resource == null);
+        var emptyPlace = _itemPlaces.First(x => x.Resource == null);
         emptyPlace.SetResource(resource);
-        resource.transform.position = emptyPlace.Position.position;
-        resource.transform.rotation = emptyPlace.Position.rotation;
-        resource.transform.parent = emptyPlace.Position;
+        _resourcesCount.Value++;
     }
-
-    public class ItemPlace
+    
+    public ResourceItem GetResource()
     {
-        public Transform Position { get; private set; }
-        public ResourceItem Resource { get; private set; }
-
-        public ItemPlace(Transform position)
-        {
-            Position = position;
-        }
-
-        public void SetResource(ResourceItem value)
-        {
-            Resource = value;
-        }
+        var place = _itemPlaces.Last(x => x.Resource != null);
+        var resource = place.Resource;
+        place.SetResource(null);
+        _resourcesCount.Value--;
+        return resource;
     }
-}
-
-public enum StorageType
-{
-    Consumed,
-    Produced
 }

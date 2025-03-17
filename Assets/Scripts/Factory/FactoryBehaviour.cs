@@ -1,84 +1,88 @@
-using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
+using UniRx;
 using UnityEngine;
 using Zenject;
 
 public class FactoryBehaviour : MonoBehaviour
 {
     [SerializeField]
-    private FactorySettings _settings;
+    private ResourceItem _resourceItem;
+    
+    [SerializeField]
+    private float _productionDuration;
     
     [SerializeField]
     private FactoryStorage _producedItemsStorage;
 
     [SerializeField]
-    private List<FactoryStorage> _consumedItemsStorages;
+    private FactoryStorage[] _consumedItemsStorages;
+    
+    private readonly CompositeDisposable _disposables = new();
+    private IFactoryRequirement[] _requirements;
 
-    private float _productionTimer;
     private bool _isActive;
-    private NotificationSystem _notificationSystem;
+    private NotificationService _notificationService;
 
     [Inject]
-    public void Construct(NotificationSystem notificationSystem)
+    public void Construct(NotificationService notificationService)
     {
-        _notificationSystem = notificationSystem;
+        _notificationService = notificationService;
     }
 
-    private void Update()
+    private void Awake()
     {
-        if (!_isActive)
+        _requirements = new IFactoryRequirement[]
         {
-            CheckRequirements();
+            new HasResourcesRequirement(_resourceItem.ResourceType, _consumedItemsStorages, _notificationService),
+            new HasEmptySpaceRequirement(_producedItemsStorage, _notificationService),
+        };
+
+        foreach (var requirement in _requirements)
+        {
+            var subscription = requirement.IsProductionAllowed.Subscribe(_ => TryStartProduction());
+            _disposables.Add(subscription);
+            _disposables.Add(requirement);
+        }
+
+        TryStartProduction();
+    }
+
+    private void TryStartProduction()
+    {
+        if (_isActive)
+        {
             return;
         }
-
-        _productionTimer += Time.deltaTime;
-        if (_productionTimer >= _settings.ProductionInterval)
+        
+        if (_requirements.All(requirement => requirement.IsProductionAllowed.Value))
         {
-            var resource = Instantiate(_settings.ResourceItem, transform.position, Quaternion.identity);
-            _producedItemsStorage.AddResource(resource);
-            _productionTimer = 0;
-            CheckRequirements();
+            ConsumeResources();
+            StartCoroutine(ProduceResource());
         }
     }
 
-    private void CheckRequirements()
-    {      
-        if (!_producedItemsStorage.HasEmptyPlace)
-        {
-            if (_isActive)
-            {
-                var notification = new FullStorageNotification(_settings.ResourceItem.ResourceType);
-                _notificationSystem.ShowNotification(notification);
-            }
-            _isActive = false;
-            return;
-        }
-
-        if (_consumedItemsStorages.Count > 0)
-        {
-            var emptyStorages = _consumedItemsStorages.Where(storage => !storage.HasResource).Select(x => x.Resource).ToList();
-            if (emptyStorages.Count > 0)
-            {
-                if (_isActive)
-                {
-                    var notification = new NoResourceNotification(_settings.ResourceItem.ResourceType, emptyStorages);
-                    _notificationSystem.ShowNotification(notification);
-                }
-                _isActive = false;
-                return;
-            }
-        }
-
-        ConsumResources();
-        _isActive = true;
-    }
-
-    private void ConsumResources()
+    private void ConsumeResources()
     {
         foreach (var storage in _consumedItemsStorages)
         {
             Destroy(storage.GetResource().gameObject);
         }
     } 
+    
+    private IEnumerator ProduceResource()
+    {
+        _isActive = true;
+        yield return new WaitForSeconds(_productionDuration);
+        _isActive = false;
+        
+        var resource = Instantiate(_resourceItem, transform.position, Quaternion.identity);
+        _producedItemsStorage.AddResource(resource);
+        TryStartProduction();
+    }
+
+    private void OnDestroy()
+    {
+        _disposables.Clear();
+    }
 }

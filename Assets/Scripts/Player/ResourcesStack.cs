@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -13,16 +12,17 @@ public class ResourcesStack : MonoBehaviour
 
     public bool HasEmptySpace => _resourceStack.Count < _capacity;
 
-    private List<ResourceItem> _resourceStack = new List<ResourceItem>();
+    private readonly List<ResourceItem> _resourceStack = new();
 
     public void AddResource(ResourceItem resource)
     {
         resource.transform.SetParent(transform);
         _resourceStack.Add(resource);
 
-        PlaceResourceSmoothly(resource, CalculateResourcePosition(_resourceStack.Count - 1));
+        var targetPosition = CalculateResourcePosition(_resourceStack.Count - 1);
+        resource.MoveTo(targetPosition, Quaternion.identity, convertToLocal: false);
     }
-
+    
     public bool HasResource(ResourceType resource)
     {
         return _resourceStack.Any(x => x.ResourceType == resource);
@@ -30,38 +30,14 @@ public class ResourcesStack : MonoBehaviour
 
     public ResourceItem GetResource(ResourceType resourceType)
     {
-        if (_resourceStack.Any(x => x.ResourceType == resourceType))
+        var resource = _resourceStack.FindLast(x => x.ResourceType == resourceType);
+        if (resource != null)
         {
-            var resource = _resourceStack.FindLast(x => x.ResourceType == resourceType);
             _resourceStack.Remove(resource);
             RecalculateStackPositions();
-            return resource;
         }
 
-        return null;
-    }
-
-    private void PlaceResourceSmoothly(ResourceItem resource, Vector3 targetPosition)
-    {
-        StartCoroutine(SmoothMovement(resource, targetPosition));
-    }
-
-    private IEnumerator SmoothMovement(ResourceItem resource, Vector3 targetPosition)
-    {
-        float duration = 0.15f;
-        Vector3 startPosition = resource.transform.localPosition;
-        Quaternion startRotation = resource.transform.localRotation;
-        float time = 0f;
-
-        while (time < duration)
-        {
-            time += Time.deltaTime;
-            resource.transform.localPosition = Vector3.Lerp(startPosition, targetPosition, time / duration);
-            resource.transform.localRotation = Quaternion.Lerp(startRotation, Quaternion.identity, time / duration);
-            yield return null;
-        }
-
-        resource.transform.localPosition = targetPosition;
+        return resource;
     }
 
     private Vector3 CalculateResourcePosition(int index)

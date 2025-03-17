@@ -4,7 +4,7 @@ using Zenject;
 public class PlayerBehaviour : MonoBehaviour
 { 
     [SerializeField]
-    private IMovement _movement;
+    private BaseMovement _movement;
 
     [SerializeField]
     private ResourcesStack _resourcesStack;
@@ -19,7 +19,7 @@ public class PlayerBehaviour : MonoBehaviour
 
     private void Awake()
     {
-        _movement = GetComponent<IMovement>();
+        _movement ??= GetComponent<BaseMovement>();
     }
 
     private void Update()
@@ -45,13 +45,13 @@ public class PlayerBehaviour : MonoBehaviour
         switch (storage.StorageType)
         {
             case StorageType.Consumed:
-                if (storage.HasEmptyPlace && _resourcesStack.HasResource(storage.Resource))
+                if (storage.HasEmptyPlace && _resourcesStack.HasResource(storage.ResourceType))
                 {
-                    storage.AddResource(_resourcesStack.GetResource(storage.Resource));
+                    storage.AddResource(_resourcesStack.GetResource(storage.ResourceType));
                 }
                 break;
             case StorageType.Produced:
-                if (storage.HasResource && _resourcesStack.HasEmptySpace)
+                if (_resourcesStack.HasEmptySpace && storage.HasResource)
                 {
                     _resourcesStack.AddResource(storage.GetResource());
                 }
